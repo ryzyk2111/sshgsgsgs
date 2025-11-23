@@ -394,18 +394,45 @@
                 </div>
                 
                 <div class="form-group">
+                    <div class="form-checkbox">
+                        <input type="checkbox" id="randomInterval">
+                        <label class="form-label" for="randomInterval" style="margin: 0;">Losowy odstęp między powiadomieniami</label>
+                    </div>
+                </div>
+
+                <div id="fixedIntervalGroup" class="form-group">
                     <label class="form-label">Odstęp między powiadomieniami (ms)</label>
                     <input type="number" id="notificationInterval" class="form-input" value="1000" min="100" max="60000" step="100">
                 </div>
 
-                <div class="form-row">
+                <div id="randomIntervalGroup" class="form-group" style="display: none;">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Min odstęp (sekundy)</label>
+                            <input type="number" id="minInterval" class="form-input" value="1" min="1" max="60" step="1">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Max odstęp (sekundy)</label>
+                            <input type="number" id="maxInterval" class="form-input" value="15" min="1" max="60" step="1">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <div class="form-checkbox">
+                        <input type="checkbox" id="randomItems">
+                        <label class="form-label" for="randomItems" style="margin: 0;">Losowa ilość produktów (1-4, każdy 17.99$)</label>
+                    </div>
+                </div>
+
+                <div id="fixedItemsGroup" class="form-row">
                     <div class="form-group">
                         <label class="form-label">Liczba produktów</label>
-                        <input type="number" id="itemCount" class="form-input" value="1" min="1">
+                        <input type="number" id="itemCount" class="form-input" value="1" min="1" max="4">
                     </div>
                     <div class="form-group">
                         <label class="form-label">Kwota ($)</label>
-                        <input type="number" id="orderAmount" class="form-input" value="49.99" min="0" step="0.01">
+                        <input type="number" id="orderAmount" class="form-input" value="17.99" min="0" step="0.01">
                     </div>
                 </div>
 
@@ -562,8 +589,15 @@
                 }
             }
 
-            const itemCount = parseInt(document.getElementById('itemCount').value) || 1;
-            const amount = parseFloat(document.getElementById('orderAmount').value) || 49.99;
+            const useRandomItems = document.getElementById('randomItems').checked;
+            let itemCount, amount;
+            if (useRandomItems) {
+                itemCount = Math.floor(Math.random() * 4) + 1; // Random 1-4
+                amount = itemCount * 17.99;
+            } else {
+                itemCount = parseInt(document.getElementById('itemCount').value) || 1;
+                amount = parseFloat(document.getElementById('orderAmount').value) || 17.99;
+            }
             const storeName = document.getElementById('storeName').value || 'Online Store';
             const userName = document.getElementById('userName').value || 'Ryzu';
             const enableVibration = document.getElementById('enableVibration').checked;
@@ -599,6 +633,29 @@
             }
         });
 
+        // Toggle random interval fields
+        document.getElementById('randomInterval').addEventListener('change', (e) => {
+            const fixedGroup = document.getElementById('fixedIntervalGroup');
+            const randomGroup = document.getElementById('randomIntervalGroup');
+            if (e.target.checked) {
+                fixedGroup.style.display = 'none';
+                randomGroup.style.display = 'block';
+            } else {
+                fixedGroup.style.display = 'block';
+                randomGroup.style.display = 'none';
+            }
+        });
+
+        // Toggle random items fields
+        document.getElementById('randomItems').addEventListener('change', (e) => {
+            const fixedGroup = document.getElementById('fixedItemsGroup');
+            if (e.target.checked) {
+                fixedGroup.style.display = 'none';
+            } else {
+                fixedGroup.style.display = 'grid';
+            }
+        });
+
         // Mass notifications
         let notificationIntervalId = null;
         let isSending = false;
@@ -614,18 +671,22 @@
             }
 
             const count = parseInt(document.getElementById('notificationCount').value) || 1;
-            const interval = parseInt(document.getElementById('notificationInterval').value) || 1000;
-            const itemCount = parseInt(document.getElementById('itemCount').value) || 1;
-            const amount = parseFloat(document.getElementById('orderAmount').value) || 49.99;
+            const useRandomInterval = document.getElementById('randomInterval').checked;
+            const fixedInterval = parseInt(document.getElementById('notificationInterval').value) || 1000;
+            const minInterval = parseInt(document.getElementById('minInterval').value) || 1;
+            const maxInterval = parseInt(document.getElementById('maxInterval').value) || 15;
+            const useRandomItems = document.getElementById('randomItems').checked;
+            const fixedItemCount = parseInt(document.getElementById('itemCount').value) || 1;
+            const fixedAmount = parseFloat(document.getElementById('orderAmount').value) || 17.99;
             const storeName = document.getElementById('storeName').value || 'Online Store';
             const userName = document.getElementById('userName').value || 'Ryzu';
             const enableVibration = document.getElementById('enableVibration').checked;
             const enableSound = document.getElementById('enableSound').checked;
 
-            if (isSending) {
+                if (isSending) {
                 // Stop sending
                 if (notificationIntervalId) {
-                    clearInterval(notificationIntervalId);
+                    clearTimeout(notificationIntervalId);
                     notificationIntervalId = null;
                 }
                 isSending = false;
@@ -650,14 +711,25 @@
                     document.getElementById('stopNotifications').style.display = 'none';
                     showStatus(`Wysłano ${sent} powiadomień!`, 'success');
                     if (notificationIntervalId) {
-                        clearInterval(notificationIntervalId);
+                        clearTimeout(notificationIntervalId);
                         notificationIntervalId = null;
                     }
                     return;
                 }
 
                 sent++;
-                await createCustomNotification(userName, itemCount, amount, storeName, enableVibration, enableSound, orderNumber);
+                
+                // Get random or fixed item count and amount
+                let currentItemCount, currentAmount;
+                if (useRandomItems) {
+                    currentItemCount = Math.floor(Math.random() * 4) + 1; // Random 1-4
+                    currentAmount = currentItemCount * 17.99;
+                } else {
+                    currentItemCount = fixedItemCount;
+                    currentAmount = fixedAmount;
+                }
+                
+                await createCustomNotification(userName, currentItemCount, currentAmount, storeName, enableVibration, enableSound, orderNumber);
                 orderNumber++;
             };
 
@@ -666,15 +738,30 @@
 
             // Send remaining notifications with interval
             if (sent < total) {
-                notificationIntervalId = setInterval(async () => {
-                    await sendNext();
-                }, interval);
+                const scheduleNext = () => {
+                    let nextInterval;
+                    if (useRandomInterval) {
+                        // Random interval between min and max (convert seconds to milliseconds)
+                        nextInterval = (Math.floor(Math.random() * (maxInterval - minInterval + 1)) + minInterval) * 1000;
+                    } else {
+                        nextInterval = fixedInterval;
+                    }
+                    
+                    notificationIntervalId = setTimeout(async () => {
+                        await sendNext();
+                        if (sent < total) {
+                            scheduleNext();
+                        }
+                    }, nextInterval);
+                };
+                
+                scheduleNext();
             }
         });
 
         document.getElementById('stopNotifications').addEventListener('click', () => {
             if (notificationIntervalId) {
-                clearInterval(notificationIntervalId);
+                clearTimeout(notificationIntervalId);
                 notificationIntervalId = null;
             }
             isSending = false;
@@ -759,8 +846,15 @@
 
         // Update display message when settings change
         function updateDisplayMessage() {
-            const itemCount = parseInt(document.getElementById('itemCount').value) || 1;
-            const amount = parseFloat(document.getElementById('orderAmount').value) || 49.99;
+            const useRandomItems = document.getElementById('randomItems').checked;
+            let itemCount, amount;
+            if (useRandomItems) {
+                itemCount = 2; // Show example with 2 items
+                amount = itemCount * 17.99;
+            } else {
+                itemCount = parseInt(document.getElementById('itemCount').value) || 1;
+                amount = parseFloat(document.getElementById('orderAmount').value) || 17.99;
+            }
             const storeName = document.getElementById('storeName').value || 'Online Store';
             const userName = document.getElementById('userName').value || 'Ryzu';
             
@@ -769,8 +863,12 @@
         }
 
         // Add event listeners to update display message
-        ['itemCount', 'orderAmount', 'storeName', 'userName'].forEach(id => {
-            document.getElementById(id).addEventListener('input', updateDisplayMessage);
+        ['itemCount', 'orderAmount', 'storeName', 'userName', 'randomItems'].forEach(id => {
+            const element = document.getElementById(id);
+            if (element) {
+                element.addEventListener('input', updateDisplayMessage);
+                element.addEventListener('change', updateDisplayMessage);
+            }
         });
     </script>
 </body>
