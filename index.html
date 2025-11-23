@@ -851,7 +851,7 @@
         }
 
         async function createCustomNotification(userName, itemCount, amount, storeName, enableVibration, enableSound, notificationNumber = 1000) {
-            const body = `$${amount.toFixed(2)}, ${itemCount} item from ${storeName} • ${storeName}`;
+            const body = `$${amount.toFixed(2)}, ${itemCount} item from Online Store • ${storeName}`;
             const title = `Order #${notificationNumber}`;
 
             // Play sound if enabled
@@ -927,7 +927,7 @@
             const storeName = document.getElementById('storeName').value || 'Online Store';
             const userName = document.getElementById('userName').value || 'Ryzu';
             
-            const message = `$${amount.toFixed(2)}, ${itemCount} item from ${storeName} • ${storeName}`;
+            const message = `$${amount.toFixed(2)}, ${itemCount} item from Online Store • ${storeName}`;
             document.getElementById('displayMessage').textContent = message;
         }
 
