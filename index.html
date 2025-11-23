@@ -10,7 +10,7 @@
     <link rel="icon" type="image/png" href="/shopify.png">
     <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#667eea">
-    <title>Shopify Notification - New Order</title>
+    <title>Shopify Notification - Order</title>
     <style>
         * {
             margin: 0;
@@ -358,12 +358,12 @@
         <div class="notification">
             <div class="notification-header">
                 <img src="shopify.png" alt="Shopify" class="shopify-logo">
-                <div class="notification-title">New order</div>
+                <div class="notification-title">Order</div>
                 <div class="notification-time">now</div>
             </div>
             <div class="notification-content">
                 <div class="notification-message" id="displayMessage">
-                    [Ryzu] You have new order for 1 items totaling 49.99$ from Online Store.
+                    $17.99, 1 item from Online Store • Online Store
                 </div>
             </div>
             <div class="notification-footer">
@@ -469,6 +469,40 @@
 
     <script>
         let notificationPermission = Notification.permission;
+        let audioContext = null;
+        let audioBuffer = null;
+        let audioInitialized = false;
+
+        // Initialize audio context for iOS compatibility
+        function initAudio() {
+            if (audioInitialized) return;
+            
+            try {
+                // Create AudioContext (works better on iOS)
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                
+                // Load audio file
+                fetch('/sound.mp3')
+                    .then(response => response.arrayBuffer())
+                    .then(arrayBuffer => audioContext.decodeAudioData(arrayBuffer))
+                    .then(decodedAudio => {
+                        audioBuffer = decodedAudio;
+                        audioInitialized = true;
+                    })
+                    .catch(error => {
+                        console.log('Could not load audio:', error);
+                        // Fallback to HTML5 audio
+                        audioInitialized = true;
+                    });
+            } catch (error) {
+                console.log('Could not initialize AudioContext:', error);
+                audioInitialized = true;
+            }
+        }
+
+        // Initialize audio on first user interaction
+        document.addEventListener('click', initAudio, { once: true });
+        document.addEventListener('touchstart', initAudio, { once: true });
 
         // Register Service Worker for better notification support
         if ('serviceWorker' in navigator) {
@@ -538,8 +572,8 @@
             if ('serviceWorker' in navigator) {
                 try {
                     const registration = await navigator.serviceWorker.ready;
-                    await registration.showNotification('New order', {
-                        body: '[Ryzu] You have new order for 1 items totaling 49.99$ from Online Store.',
+                    await registration.showNotification('Order', {
+                        body: '$17.99, 1 item from Online Store • Online Store',
                         icon: '/shopify.png',
                         badge: '/shopify.png',
                         tag: 'shopify-order',
@@ -557,8 +591,8 @@
             }
 
             // Fallback to standard Notification API
-            const notification = new Notification('New order', {
-                body: '[Ryzu] You have new order for 1 items totaling 49.99$ from Online Store.',
+            const notification = new Notification('Order', {
+                body: '$17.99, 1 item from Online Store • Online Store',
                 icon: '/shopify.png',
                 badge: '/shopify.png',
                 tag: 'shopify-order',
@@ -580,6 +614,9 @@
 
         // Handle button click - use custom settings
         document.querySelector('.notification-action').addEventListener('click', async () => {
+            // Initialize audio on first interaction
+            initAudio();
+            
             if (notificationPermission !== 'granted') {
                 const permission = await Notification.requestPermission();
                 notificationPermission = permission;
@@ -661,6 +698,9 @@
         let isSending = false;
 
         document.getElementById('sendMassNotifications').addEventListener('click', async () => {
+            // Initialize audio on first interaction
+            initAudio();
+            
             if (notificationPermission !== 'granted') {
                 const permission = await Notification.requestPermission();
                 notificationPermission = permission;
@@ -772,18 +812,47 @@
 
         // Function to play notification sound
         function playNotificationSound() {
+            // Try Web Audio API first (better for iOS)
+            if (audioContext && audioBuffer) {
+                try {
+                    const source = audioContext.createBufferSource();
+                    source.buffer = audioBuffer;
+                    source.connect(audioContext.destination);
+                    source.start(0);
+                    return;
+                } catch (error) {
+                    console.log('Web Audio API failed, trying fallback:', error);
+                }
+            }
+            
+            // Fallback to HTML5 audio
             const audio = document.getElementById('notificationSound');
             if (audio) {
-                audio.currentTime = 0; // Reset to start
-                audio.play().catch(error => {
-                    console.log('Could not play notification sound:', error);
-                });
+                // For iOS, we need to ensure audio is played
+                audio.currentTime = 0;
+                const playPromise = audio.play();
+                if (playPromise !== undefined) {
+                    playPromise.catch(error => {
+                        console.log('Could not play notification sound:', error);
+                        // Try to resume audio context if suspended (iOS requirement)
+                        if (audioContext && audioContext.state === 'suspended') {
+                            audioContext.resume().then(() => {
+                                if (audioBuffer) {
+                                    const source = audioContext.createBufferSource();
+                                    source.buffer = audioBuffer;
+                                    source.connect(audioContext.destination);
+                                    source.start(0);
+                                }
+                            });
+                        }
+                    });
+                }
             }
         }
 
         async function createCustomNotification(userName, itemCount, amount, storeName, enableVibration, enableSound, notificationNumber = 1000) {
-            const body = `[${userName}] You have new order for ${itemCount} ${itemCount === 1 ? 'item' : 'items'} totaling ${amount.toFixed(2)}$ from ${storeName}.`;
-            const title = `New order #${notificationNumber}`;
+            const body = `$${amount.toFixed(2)}, ${itemCount} item from ${storeName} • ${storeName}`;
+            const title = `Order #${notificationNumber}`;
 
             // Play sound if enabled
             if (enableSound) {
@@ -858,7 +927,7 @@
             const storeName = document.getElementById('storeName').value || 'Online Store';
             const userName = document.getElementById('userName').value || 'Ryzu';
             
-            const message = `[${userName}] You have new order for ${itemCount} ${itemCount === 1 ? 'item' : 'items'} totaling ${amount.toFixed(2)}$ from ${storeName}.`;
+            const message = `$${amount.toFixed(2)}, ${itemCount} item from ${storeName} • ${storeName}`;
             document.getElementById('displayMessage').textContent = message;
         }
 

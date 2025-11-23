@@ -19,9 +19,9 @@ self.addEventListener('notificationclick', function(event) {
 
 self.addEventListener('push', function(event) {
     const data = event.data ? event.data.json() : {};
-    const title = data.title || 'New order';
+    const title = data.title || 'Order';
     const options = {
-        body: data.body || '[Ryzu] You have new order for 1 items totaling 49.99$ from Online Store.',
+        body: data.body || '$17.99, 1 item from Online Store • Online Store',
         icon: '/shopify.png',
         badge: '/shopify.png',
         tag: 'shopify-order',
