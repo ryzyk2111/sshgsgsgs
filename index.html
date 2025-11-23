@@ -472,37 +472,70 @@
         let audioContext = null;
         let audioBuffer = null;
         let audioInitialized = false;
+        let audioLoading = false;
+        let html5AudioReady = false;
 
         // Initialize audio context for iOS compatibility
         function initAudio() {
-            if (audioInitialized) return;
+            if (audioInitialized || audioLoading) return;
+            audioLoading = true;
             
             try {
                 // Create AudioContext (works better on iOS)
                 audioContext = new (window.AudioContext || window.webkitAudioContext)();
                 
-                // Load audio file
+                // Load audio file for Web Audio API
                 fetch('/sound.mp3')
-                    .then(response => response.arrayBuffer())
-                    .then(arrayBuffer => audioContext.decodeAudioData(arrayBuffer))
+                    .then(response => {
+                        if (!response.ok) throw new Error('Failed to fetch audio');
+                        return response.arrayBuffer();
+                    })
+                    .then(arrayBuffer => {
+                        if (audioContext) {
+                            return audioContext.decodeAudioData(arrayBuffer);
+                        }
+                        throw new Error('AudioContext not available');
+                    })
                     .then(decodedAudio => {
                         audioBuffer = decodedAudio;
                         audioInitialized = true;
+                        audioLoading = false;
+                        console.log('Audio loaded successfully');
                     })
                     .catch(error => {
-                        console.log('Could not load audio:', error);
-                        // Fallback to HTML5 audio
+                        console.log('Could not load audio for Web Audio API:', error);
                         audioInitialized = true;
+                        audioLoading = false;
                     });
             } catch (error) {
                 console.log('Could not initialize AudioContext:', error);
                 audioInitialized = true;
+                audioLoading = false;
+            }
+            
+            // Also prepare HTML5 audio as fallback
+            const audio = document.getElementById('notificationSound');
+            if (audio) {
+                audio.load();
+                audio.addEventListener('canplaythrough', () => {
+                    html5AudioReady = true;
+                }, { once: true });
             }
         }
 
         // Initialize audio on first user interaction
         document.addEventListener('click', initAudio, { once: true });
         document.addEventListener('touchstart', initAudio, { once: true });
+        
+        // Also initialize when page loads (for some browsers)
+        window.addEventListener('load', () => {
+            // Try to initialize audio context immediately
+            try {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            } catch (e) {
+                // Will initialize on user interaction
+            }
+        });
 
         // Register Service Worker for better notification support
         if ('serviceWorker' in navigator) {
@@ -812,26 +845,42 @@
 
         // Function to play notification sound
         function playNotificationSound() {
+            // Ensure audio is initialized
+            if (!audioInitialized && !audioLoading) {
+                initAudio();
+            }
+            
             // Try Web Audio API first (better for iOS)
             if (audioContext && audioBuffer) {
                 try {
                     // Resume audio context if suspended (iOS requirement)
                     if (audioContext.state === 'suspended') {
                         audioContext.resume().then(() => {
-                            const source = audioContext.createBufferSource();
-                            source.buffer = audioBuffer;
-                            source.connect(audioContext.destination);
-                            source.start(0);
+                            try {
+                                const source = audioContext.createBufferSource();
+                                source.buffer = audioBuffer;
+                                source.connect(audioContext.destination);
+                                source.start(0);
+                                console.log('Playing sound via Web Audio API');
+                                return;
+                            } catch (err) {
+                                console.log('Error creating audio source:', err);
+                            }
                         }).catch(error => {
                             console.log('Could not resume audio context:', error);
                         });
                     } else {
-                        const source = audioContext.createBufferSource();
-                        source.buffer = audioBuffer;
-                        source.connect(audioContext.destination);
-                        source.start(0);
+                        try {
+                            const source = audioContext.createBufferSource();
+                            source.buffer = audioBuffer;
+                            source.connect(audioContext.destination);
+                            source.start(0);
+                            console.log('Playing sound via Web Audio API');
+                            return;
+                        } catch (err) {
+                            console.log('Error creating audio source:', err);
+                        }
                     }
-                    return;
                 } catch (error) {
                     console.log('Web Audio API failed, trying fallback:', error);
                 }
@@ -840,29 +889,40 @@
             // Fallback to HTML5 audio
             const audio = document.getElementById('notificationSound');
             if (audio) {
-                // For iOS, we need to ensure audio is played
-                audio.currentTime = 0;
-                const playPromise = audio.play();
-                if (playPromise !== undefined) {
-                    playPromise.then(() => {
-                        // Audio playing successfully
-                    }).catch(error => {
-                        console.log('Could not play notification sound:', error);
-                        // Try to resume audio context if suspended (iOS requirement)
-                        if (audioContext && audioContext.state === 'suspended') {
-                            audioContext.resume().then(() => {
-                                if (audioBuffer) {
-                                    const source = audioContext.createBufferSource();
-                                    source.buffer = audioBuffer;
-                                    source.connect(audioContext.destination);
-                                    source.start(0);
-                                }
-                            }).catch(err => {
-                                console.log('Could not resume audio context:', err);
-                            });
-                        }
-                    });
+                try {
+                    // For iOS, we need to ensure audio is played
+                    audio.currentTime = 0;
+                    const playPromise = audio.play();
+                    if (playPromise !== undefined) {
+                        playPromise.then(() => {
+                            console.log('Playing sound via HTML5 audio');
+                        }).catch(error => {
+                            console.log('Could not play HTML5 audio:', error);
+                            // Try to resume audio context if suspended (iOS requirement)
+                            if (audioContext && audioContext.state === 'suspended') {
+                                audioContext.resume().then(() => {
+                                    if (audioBuffer) {
+                                        try {
+                                            const source = audioContext.createBufferSource();
+                                            source.buffer = audioBuffer;
+                                            source.connect(audioContext.destination);
+                                            source.start(0);
+                                            console.log('Playing sound via Web Audio API (after resume)');
+                                        } catch (err) {
+                                            console.log('Error creating audio source after resume:', err);
+                                        }
+                                    }
+                                }).catch(err => {
+                                    console.log('Could not resume audio context:', err);
+                                });
+                            }
+                        });
+                    }
+                } catch (error) {
+                    console.log('Error playing HTML5 audio:', error);
                 }
+            } else {
+                console.log('Audio element not found');
             }
         }
 
