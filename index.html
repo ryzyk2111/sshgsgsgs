@@ -598,11 +598,8 @@
         }
 
         async function createNotification() {
-            // Play custom sound BEFORE showing notification (so it doesn't use system sound)
+            // Play custom sound at the same time as notification
             playNotificationSound();
-            
-            // Small delay to ensure sound starts playing
-            await new Promise(resolve => setTimeout(resolve, 100));
 
             // Try to use service worker notification if available
             if ('serviceWorker' in navigator) {
@@ -615,7 +612,7 @@
                         tag: 'shopify-order',
                         requireInteraction: false,
                         vibrate: [200, 100, 200],
-                        silent: true, // Silent so it doesn't play system sound
+                        silent: false, // Allow system sound, custom sound plays in parallel
                         data: {
                             url: window.location.href
                         }
@@ -633,7 +630,7 @@
                 badge: '/shopify.png',
                 tag: 'shopify-order',
                 requireInteraction: false,
-                silent: true, // Silent so it doesn't play system sound
+                silent: false, // Allow system sound, custom sound plays in parallel
                 vibrate: [200, 100, 200]
             });
 
@@ -933,11 +930,9 @@
             const body = `$${amount.toFixed(2)}, ${itemCount} item from Online Store • ${storeName}`;
             const title = `Order #${notificationNumber}`;
 
-            // Play custom sound BEFORE showing notification (so it doesn't use system sound)
+            // Play custom sound at the same time as notification (if enabled)
             if (enableSound) {
                 playNotificationSound();
-                // Small delay to ensure sound starts playing
-                await new Promise(resolve => setTimeout(resolve, 100));
             }
 
             // Try to use service worker notification if available
@@ -951,7 +946,7 @@
                         tag: `shopify-order-${notificationNumber}-${Date.now()}`,
                         requireInteraction: false,
                         vibrate: enableVibration ? [200, 100, 200] : undefined,
-                        silent: true, // Always silent so custom sound plays instead of system sound
+                        silent: !enableSound, // Silent only if sound is disabled
                         data: {
                             url: window.location.href
                         }
@@ -969,7 +964,7 @@
                 badge: '/shopify.png',
                 tag: `shopify-order-${notificationNumber}-${Date.now()}`,
                 requireInteraction: false,
-                silent: true, // Always silent so custom sound plays instead of system sound
+                silent: !enableSound, // Silent only if sound is disabled
                 vibrate: enableVibration ? [200, 100, 200] : undefined
             });
 
