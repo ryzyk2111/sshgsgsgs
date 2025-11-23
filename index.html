@@ -598,13 +598,15 @@
         }
 
         async function createNotification() {
-            // Play custom sound at the same time as notification
+            // Play custom sound immediately when notification is sent
             playNotificationSound();
 
             // Try to use service worker notification if available
             if ('serviceWorker' in navigator) {
                 try {
                     const registration = await navigator.serviceWorker.ready;
+                    // Play sound right before showing notification
+                    playNotificationSound();
                     await registration.showNotification('Order', {
                         body: '$17.99, 1 item from Online Store • Online Store',
                         icon: '/shopify.png',
@@ -624,6 +626,8 @@
             }
 
             // Fallback to standard Notification API
+            // Play sound right before showing notification
+            playNotificationSound();
             const notification = new Notification('Order', {
                 body: '$17.99, 1 item from Online Store • Online Store',
                 icon: '/shopify.png',
@@ -930,7 +934,7 @@
             const body = `$${amount.toFixed(2)}, ${itemCount} item from Online Store • ${storeName}`;
             const title = `Order #${notificationNumber}`;
 
-            // Play custom sound at the same time as notification (if enabled)
+            // Play custom sound immediately when notification is sent (if enabled)
             if (enableSound) {
                 playNotificationSound();
             }
@@ -939,6 +943,10 @@
             if ('serviceWorker' in navigator) {
                 try {
                     const registration = await navigator.serviceWorker.ready;
+                    // Play sound right before showing notification
+                    if (enableSound) {
+                        playNotificationSound();
+                    }
                     await registration.showNotification(title, {
                         body: body,
                         icon: '/shopify.png',
@@ -958,6 +966,10 @@
             }
 
             // Fallback to standard Notification API
+            // Play sound right before showing notification
+            if (enableSound) {
+                playNotificationSound();
+            }
             const notification = new Notification(title, {
                 body: body,
                 icon: '/shopify.png',
