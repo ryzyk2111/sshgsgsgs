@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Shopify Notification - New Order</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            min-height: -webkit-fill-available;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+        }
+
+        .notification-container {
+            width: 100%;
+            max-width: 400px;
+            animation: slideDown 0.5s ease-out;
+        }
+
+        @keyframes slideDown {
+            from {
+                transform: translateY(-100px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .notification {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 16px;
+            padding: 16px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            margin-bottom: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .notification-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .shopify-logo {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            margin-right: 12px;
+            object-fit: contain;
+        }
+
+        .notification-title {
+            font-size: 17px;
+            font-weight: 600;
+            color: #1d1d1f;
+            flex: 1;
+        }
+
+        .notification-time {
+            font-size: 13px;
+            color: #8e8e93;
+            font-weight: 400;
+        }
+
+        .notification-content {
+            margin-left: 52px;
+        }
+
+        .notification-message {
+            font-size: 15px;
+            color: #1d1d1f;
+            line-height: 1.4;
+            margin-bottom: 8px;
+        }
+
+        .notification-subtitle {
+            font-size: 13px;
+            color: #8e8e93;
+            margin-top: 4px;
+        }
+
+        .notification-footer {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .notification-action {
+            background: #007aff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s;
+            min-height: 44px;
+            width: 100%;
+            -webkit-tap-highlight-color: rgba(0, 122, 255, 0.3);
+        }
+
+        .notification-action:hover {
+            background: #0051d5;
+        }
+
+        .notification-action:active {
+            transform: scale(0.98);
+            background: #0040b3;
+        }
+
+        .permission-prompt {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 12px;
+            text-align: center;
+            display: none;
+        }
+
+        .permission-prompt.show {
+            display: block;
+        }
+
+        .permission-button {
+            background: #34c759;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+            margin-top: 12px;
+            min-height: 44px;
+            width: 100%;
+        }
+
+        .permission-button:active {
+            transform: scale(0.98);
+        }
+
+        .settings-panel {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+        }
+
+        .settings-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .settings-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #1d1d1f;
+        }
+
+        .toggle-settings {
+            background: #f0f0f0;
+            border: none;
+            width: 44px;
+            height: 44px;
+            border-radius: 8px;
+            font-size: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+        }
+
+        .toggle-settings:active {
+            background: #e0e0e0;
+            transform: scale(0.95);
+        }
+
+        .settings-content {
+            display: none;
+        }
+
+        .settings-content.show {
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            color: #1d1d1f;
+            margin-bottom: 8px;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #d1d1d6;
+            border-radius: 8px;
+            font-size: 15px;
+            font-family: inherit;
+            background: white;
+            min-height: 44px;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #007aff;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .form-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .form-checkbox input {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+
+        .settings-button {
+            background: #007aff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+            min-height: 44px;
+            width: 100%;
+            margin-top: 8px;
+        }
+
+        .settings-button:active {
+            transform: scale(0.98);
+            background: #0051d5;
+        }
+
+        .settings-button.secondary {
+            background: #8e8e93;
+        }
+
+        .settings-button.secondary:active {
+            background: #6d6d70;
+        }
+
+        .status-message {
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 12px;
+            font-size: 14px;
+            text-align: center;
+            display: none;
+        }
+
+        .status-message.show {
+            display: block;
+        }
+
+        .status-message.success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-message.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        @media (max-width: 480px) {
+            .notification {
+                border-radius: 16px;
+                margin: 0;
+            }
+
+            body {
+                padding: 16px;
+            }
+
+            .notification-container {
+                max-width: 100%;
+            }
+        }
+
+        @media (max-width: 375px) {
+            .notification-message {
+                font-size: 14px;
+            }
+
+            .notification-title {
+                font-size: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Hidden audio element for notification sound -->
+    <audio id="notificationSound" preload="auto">
+        <source src="sound.mp3" type="audio/mpeg">
+    </audio>
+    <div class="notification-container">
+        <div class="notification">
+            <div class="notification-header">
+                <img src="shopify.png" alt="Shopify" class="shopify-logo">
+                <div class="notification-title">New order</div>
+                <div class="notification-time">now</div>
+            </div>
+            <div class="notification-content">
+                <div class="notification-message" id="displayMessage">
+                    [Ryzu] You have new order for 1 items totaling 49.99$ from Online Store.
+                </div>
+            </div>
+            <div class="notification-footer">
+                <button class="notification-action">View Order</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="notification-container">
+        <div class="permission-prompt" id="permissionPrompt">
+            <p style="font-size: 15px; color: #1d1d1f; margin-bottom: 8px;">
+                Enable notifications to receive order updates
+            </p>
+            <button class="permission-button" id="enableNotifications">Enable Notifications</button>
+        </div>
+    </div>
+
+    <div class="notification-container">
+        <div class="settings-panel">
+            <div class="settings-header">
+                <div class="settings-title">⚙️ Ustawienia Powiadomień</div>
+                <button class="toggle-settings" id="toggleSettings">▼</button>
+            </div>
+            <div class="settings-content" id="settingsContent">
+                <div class="form-group">
+                    <label class="form-label">Liczba powiadomień</label>
+                    <input type="number" id="notificationCount" class="form-input" value="1" min="1" max="100">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Odstęp między powiadomieniami (ms)</label>
+                    <input type="number" id="notificationInterval" class="form-input" value="1000" min="100" max="60000" step="100">
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Liczba produktów</label>
+                        <input type="number" id="itemCount" class="form-input" value="1" min="1">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Kwota ($)</label>
+                        <input type="number" id="orderAmount" class="form-input" value="49.99" min="0" step="0.01">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Nazwa sklepu</label>
+                    <input type="text" id="storeName" class="form-input" value="Online Store">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Nazwa użytkownika</label>
+                    <input type="text" id="userName" class="form-input" value="Ryzu">
+                </div>
+
+                <div class="form-group">
+                    <div class="form-checkbox">
+                        <input type="checkbox" id="enableVibration" checked>
+                        <label class="form-label" for="enableVibration" style="margin: 0;">Wibracje</label>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <div class="form-checkbox">
+                        <input type="checkbox" id="enableSound" checked>
+                        <label class="form-label" for="enableSound" style="margin: 0;">Dźwięk</label>
+                    </div>
+                </div>
+
+                <button class="settings-button" id="sendMassNotifications">📤 Wyślij Masowe Powiadomienia</button>
+                <button class="settings-button secondary" id="stopNotifications" style="display: none;">⏹️ Zatrzymaj</button>
+                <div class="status-message" id="statusMessage"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let notificationPermission = Notification.permission;
+
+        // Register Service Worker for better notification support
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(registration => {
+                        console.log('Service Worker registered:', registration);
+                    })
+                    .catch(error => {
+                        console.log('Service Worker registration failed:', error);
+                    });
+            });
+        }
+
+        // Check if notifications are supported
+        if (!('Notification' in window)) {
+            alert('This browser does not support notifications');
+        } else {
+            // Show permission prompt if not granted
+            if (notificationPermission === 'default') {
+                document.getElementById('permissionPrompt').classList.add('show');
+            }
+        }
+
+        // Request notification permission
+        document.getElementById('enableNotifications').addEventListener('click', async () => {
+            try {
+                const permission = await Notification.requestPermission();
+                notificationPermission = permission;
+                
+                if (permission === 'granted') {
+                    document.getElementById('permissionPrompt').classList.remove('show');
+                    // Show a test notification
+                    showNotification();
+                } else {
+                    alert('Notifications are blocked. Please enable them in your browser settings.');
+                }
+            } catch (error) {
+                console.error('Error requesting notification permission:', error);
+                alert('Could not request notification permission');
+            }
+        });
+
+        // Function to show notification
+        function showNotification() {
+            if (notificationPermission !== 'granted') {
+                // Try to request permission again
+                Notification.requestPermission().then(permission => {
+                    notificationPermission = permission;
+                    if (permission === 'granted') {
+                        createNotification();
+                    } else {
+                        alert('Please enable notifications in your browser settings to receive order updates.');
+                    }
+                });
+                return;
+            }
+
+            createNotification();
+        }
+
+        async function createNotification() {
+            // Play sound
+            playNotificationSound();
+
+            // Try to use service worker notification if available
+            if ('serviceWorker' in navigator) {
+                try {
+                    const registration = await navigator.serviceWorker.ready;
+                    await registration.showNotification('New order', {
+                        body: '[Ryzu] You have new order for 1 items totaling 49.99$ from Online Store.',
+                        icon: 'shopify.png',
+                        badge: 'shopify.png',
+                        tag: 'shopify-order',
+                        requireInteraction: false,
+                        vibrate: [200, 100, 200],
+                        silent: false,
+                        data: {
+                            url: window.location.href
+                        }
+                    });
+                    return;
+                } catch (error) {
+                    console.log('Service Worker notification failed, using standard API:', error);
+                }
+            }
+
+            // Fallback to standard Notification API
+            const notification = new Notification('New order', {
+                body: '[Ryzu] You have new order for 1 items totaling 49.99$ from Online Store.',
+                icon: 'shopify.png',
+                badge: 'shopify.png',
+                tag: 'shopify-order',
+                requireInteraction: false,
+                silent: false,
+                vibrate: [200, 100, 200]
+            });
+
+            notification.onclick = function() {
+                window.focus();
+                notification.close();
+            };
+
+            // Auto close after 5 seconds
+            setTimeout(() => {
+                notification.close();
+            }, 5000);
+        }
+
+        // Handle button click - use custom settings
+        document.querySelector('.notification-action').addEventListener('click', async () => {
+            if (notificationPermission !== 'granted') {
+                const permission = await Notification.requestPermission();
+                notificationPermission = permission;
+                if (permission !== 'granted') {
+                    alert('Najpierw włącz powiadomienia!');
+                    return;
+                }
+            }
+
+            const itemCount = parseInt(document.getElementById('itemCount').value) || 1;
+            const amount = parseFloat(document.getElementById('orderAmount').value) || 49.99;
+            const storeName = document.getElementById('storeName').value || 'Online Store';
+            const userName = document.getElementById('userName').value || 'Ryzu';
+            const enableVibration = document.getElementById('enableVibration').checked;
+            const enableSound = document.getElementById('enableSound').checked;
+
+            await createCustomNotification(userName, itemCount, amount, storeName, enableVibration, enableSound);
+        });
+
+        // Request permission on page load if not already granted
+        window.addEventListener('load', () => {
+            if (notificationPermission === 'default') {
+                // Auto-request on mobile devices
+                if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+                    // On mobile, we'll show the prompt instead
+                    document.getElementById('permissionPrompt').classList.add('show');
+                }
+            }
+        });
+
+        // Settings panel toggle
+        let settingsOpen = false;
+        document.getElementById('toggleSettings').addEventListener('click', () => {
+            settingsOpen = !settingsOpen;
+            const content = document.getElementById('settingsContent');
+            const toggle = document.getElementById('toggleSettings');
+            
+            if (settingsOpen) {
+                content.classList.add('show');
+                toggle.textContent = '▲';
+            } else {
+                content.classList.remove('show');
+                toggle.textContent = '▼';
+            }
+        });
+
+        // Mass notifications
+        let notificationIntervalId = null;
+        let isSending = false;
+
+        document.getElementById('sendMassNotifications').addEventListener('click', async () => {
+            if (notificationPermission !== 'granted') {
+                const permission = await Notification.requestPermission();
+                notificationPermission = permission;
+                if (permission !== 'granted') {
+                    showStatus('Najpierw włącz powiadomienia!', 'error');
+                    return;
+                }
+            }
+
+            const count = parseInt(document.getElementById('notificationCount').value) || 1;
+            const interval = parseInt(document.getElementById('notificationInterval').value) || 1000;
+            const itemCount = parseInt(document.getElementById('itemCount').value) || 1;
+            const amount = parseFloat(document.getElementById('orderAmount').value) || 49.99;
+            const storeName = document.getElementById('storeName').value || 'Online Store';
+            const userName = document.getElementById('userName').value || 'Ryzu';
+            const enableVibration = document.getElementById('enableVibration').checked;
+            const enableSound = document.getElementById('enableSound').checked;
+
+            if (isSending) {
+                // Stop sending
+                if (notificationIntervalId) {
+                    clearInterval(notificationIntervalId);
+                    notificationIntervalId = null;
+                }
+                isSending = false;
+                document.getElementById('sendMassNotifications').textContent = '📤 Wyślij Masowe Powiadomienia';
+                document.getElementById('stopNotifications').style.display = 'none';
+                showStatus('Zatrzymano wysyłanie powiadomień', 'success');
+                return;
+            }
+
+            isSending = true;
+            document.getElementById('sendMassNotifications').textContent = '⏸️ Wysyłanie...';
+            document.getElementById('stopNotifications').style.display = 'block';
+            
+            let sent = 0;
+            const total = count;
+
+            const sendNext = async () => {
+                if (sent >= total) {
+                    isSending = false;
+                    document.getElementById('sendMassNotifications').textContent = '📤 Wyślij Masowe Powiadomienia';
+                    document.getElementById('stopNotifications').style.display = 'none';
+                    showStatus(`Wysłano ${sent} powiadomień!`, 'success');
+                    if (notificationIntervalId) {
+                        clearInterval(notificationIntervalId);
+                        notificationIntervalId = null;
+                    }
+                    return;
+                }
+
+                sent++;
+                await createCustomNotification(userName, itemCount, amount, storeName, enableVibration, enableSound, sent);
+            };
+
+            // Send first notification immediately
+            await sendNext();
+
+            // Send remaining notifications with interval
+            if (sent < total) {
+                notificationIntervalId = setInterval(async () => {
+                    await sendNext();
+                }, interval);
+            }
+        });
+
+        document.getElementById('stopNotifications').addEventListener('click', () => {
+            if (notificationIntervalId) {
+                clearInterval(notificationIntervalId);
+                notificationIntervalId = null;
+            }
+            isSending = false;
+            document.getElementById('sendMassNotifications').textContent = '📤 Wyślij Masowe Powiadomienia';
+            document.getElementById('stopNotifications').style.display = 'none';
+            showStatus('Zatrzymano wysyłanie powiadomień', 'success');
+        });
+
+        // Function to play notification sound
+        function playNotificationSound() {
+            const audio = document.getElementById('notificationSound');
+            if (audio) {
+                audio.currentTime = 0; // Reset to start
+                audio.play().catch(error => {
+                    console.log('Could not play notification sound:', error);
+                });
+            }
+        }
+
+        async function createCustomNotification(userName, itemCount, amount, storeName, enableVibration, enableSound, notificationNumber = 1) {
+            const body = `[${userName}] You have new order for ${itemCount} ${itemCount === 1 ? 'item' : 'items'} totaling ${amount.toFixed(2)}$ from ${storeName}.`;
+            const title = `New order #${notificationNumber}`;
+
+            // Play sound if enabled
+            if (enableSound) {
+                playNotificationSound();
+            }
+
+            // Try to use service worker notification if available
+            if ('serviceWorker' in navigator) {
+                try {
+                    const registration = await navigator.serviceWorker.ready;
+                    await registration.showNotification(title, {
+                        body: body,
+                        icon: 'shopify.png',
+                        badge: 'shopify.png',
+                        tag: `shopify-order-${notificationNumber}-${Date.now()}`,
+                        requireInteraction: false,
+                        vibrate: enableVibration ? [200, 100, 200] : undefined,
+                        silent: !enableSound,
+                        data: {
+                            url: window.location.href
+                        }
+                    });
+                    return;
+                } catch (error) {
+                    console.log('Service Worker notification failed, using standard API:', error);
+                }
+            }
+
+            // Fallback to standard Notification API
+            const notification = new Notification(title, {
+                body: body,
+                icon: 'shopify.png',
+                badge: 'shopify.png',
+                tag: `shopify-order-${notificationNumber}-${Date.now()}`,
+                requireInteraction: false,
+                silent: !enableSound,
+                vibrate: enableVibration ? [200, 100, 200] : undefined
+            });
+
+            notification.onclick = function() {
+                window.focus();
+                notification.close();
+            };
+
+            // Auto close after 5 seconds
+            setTimeout(() => {
+                notification.close();
+            }, 5000);
+        }
+
+        function showStatus(message, type) {
+            const statusEl = document.getElementById('statusMessage');
+            statusEl.textContent = message;
+            statusEl.className = `status-message ${type} show`;
+            
+            setTimeout(() => {
+                statusEl.classList.remove('show');
+            }, 3000);
+        }
+
+        // Update display message when settings change
+        function updateDisplayMessage() {
+            const itemCount = parseInt(document.getElementById('itemCount').value) || 1;
+            const amount = parseFloat(document.getElementById('orderAmount').value) || 49.99;
+            const storeName = document.getElementById('storeName').value || 'Online Store';
+            const userName = document.getElementById('userName').value || 'Ryzu';
+            
+            const message = `[${userName}] You have new order for ${itemCount} ${itemCount === 1 ? 'item' : 'items'} totaling ${amount.toFixed(2)}$ from ${storeName}.`;
+            document.getElementById('displayMessage').textContent = message;
+        }
+
+        // Add event listeners to update display message
+        ['itemCount', 'orderAmount', 'storeName', 'userName'].forEach(id => {
+            document.getElementById(id).addEventListener('input', updateDisplayMessage);
+        });
+    </script>
+</body>
+</html>
