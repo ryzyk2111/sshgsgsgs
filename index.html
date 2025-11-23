@@ -579,7 +579,7 @@
                         tag: 'shopify-order',
                         requireInteraction: false,
                         vibrate: [200, 100, 200],
-                        silent: true,
+                        silent: false,
                         data: {
                             url: window.location.href
                         }
@@ -597,7 +597,7 @@
                 badge: '/shopify.png',
                 tag: 'shopify-order',
                 requireInteraction: false,
-                silent: true,
+                silent: false,
                 vibrate: [200, 100, 200]
             });
 
@@ -815,10 +815,22 @@
             // Try Web Audio API first (better for iOS)
             if (audioContext && audioBuffer) {
                 try {
-                    const source = audioContext.createBufferSource();
-                    source.buffer = audioBuffer;
-                    source.connect(audioContext.destination);
-                    source.start(0);
+                    // Resume audio context if suspended (iOS requirement)
+                    if (audioContext.state === 'suspended') {
+                        audioContext.resume().then(() => {
+                            const source = audioContext.createBufferSource();
+                            source.buffer = audioBuffer;
+                            source.connect(audioContext.destination);
+                            source.start(0);
+                        }).catch(error => {
+                            console.log('Could not resume audio context:', error);
+                        });
+                    } else {
+                        const source = audioContext.createBufferSource();
+                        source.buffer = audioBuffer;
+                        source.connect(audioContext.destination);
+                        source.start(0);
+                    }
                     return;
                 } catch (error) {
                     console.log('Web Audio API failed, trying fallback:', error);
@@ -832,7 +844,9 @@
                 audio.currentTime = 0;
                 const playPromise = audio.play();
                 if (playPromise !== undefined) {
-                    playPromise.catch(error => {
+                    playPromise.then(() => {
+                        // Audio playing successfully
+                    }).catch(error => {
                         console.log('Could not play notification sound:', error);
                         // Try to resume audio context if suspended (iOS requirement)
                         if (audioContext && audioContext.state === 'suspended') {
@@ -843,6 +857,8 @@
                                     source.connect(audioContext.destination);
                                     source.start(0);
                                 }
+                            }).catch(err => {
+                                console.log('Could not resume audio context:', err);
                             });
                         }
                     });
@@ -870,7 +886,7 @@
                         tag: `shopify-order-${notificationNumber}-${Date.now()}`,
                         requireInteraction: false,
                         vibrate: enableVibration ? [200, 100, 200] : undefined,
-                        silent: true,
+                        silent: !enableSound,
                         data: {
                             url: window.location.href
                         }
@@ -888,7 +904,7 @@
                 badge: '/shopify.png',
                 tag: `shopify-order-${notificationNumber}-${Date.now()}`,
                 requireInteraction: false,
-                silent: true,
+                silent: !enableSound,
                 vibrate: enableVibration ? [200, 100, 200] : undefined
             });
 
