@@ -352,7 +352,7 @@
 <body>
     <!-- Hidden audio element for notification sound -->
     <audio id="notificationSound" preload="auto" style="display: none;">
-        <source src="/sound.mp3" type="audio/mpeg">
+        <source src="/sound.m4a" type="audio/mp4">
     </audio>
     <div class="notification-container">
         <div class="notification">
@@ -485,7 +485,7 @@
                 audioContext = new (window.AudioContext || window.webkitAudioContext)();
                 
                 // Load audio file for Web Audio API
-                fetch('/sound.mp3')
+                fetch('/sound.m4a')
                     .then(response => {
                         if (!response.ok) throw new Error('Failed to fetch audio');
                         return response.arrayBuffer();
