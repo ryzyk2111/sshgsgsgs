@@ -22,8 +22,8 @@ self.addEventListener('push', function(event) {
     const title = data.title || 'New order';
     const options = {
         body: data.body || '[Ryzu] You have new order for 1 items totaling 49.99$ from Online Store.',
-        icon: 'shopify.png',
-        badge: 'shopify.png',
+        icon: '/shopify.png',
+        badge: '/shopify.png',
         tag: 'shopify-order',
         requireInteraction: false,
         vibrate: [200, 100, 200]

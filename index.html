@@ -500,8 +500,8 @@
                     const registration = await navigator.serviceWorker.ready;
                     await registration.showNotification('New order', {
                         body: '[Ryzu] You have new order for 1 items totaling 49.99$ from Online Store.',
-                        icon: 'shopify.png',
-                        badge: 'shopify.png',
+                        icon: '/shopify.png',
+                        badge: '/shopify.png',
                         tag: 'shopify-order',
                         requireInteraction: false,
                         vibrate: [200, 100, 200],
@@ -519,8 +519,8 @@
             // Fallback to standard Notification API
             const notification = new Notification('New order', {
                 body: '[Ryzu] You have new order for 1 items totaling 49.99$ from Online Store.',
-                icon: 'shopify.png',
-                badge: 'shopify.png',
+                icon: '/shopify.png',
+                badge: '/shopify.png',
                 tag: 'shopify-order',
                 requireInteraction: false,
                 silent: false,
@@ -556,7 +556,7 @@
             const enableVibration = document.getElementById('enableVibration').checked;
             const enableSound = document.getElementById('enableSound').checked;
 
-            await createCustomNotification(userName, itemCount, amount, storeName, enableVibration, enableSound);
+            await createCustomNotification(userName, itemCount, amount, storeName, enableVibration, enableSound, 1000);
         });
 
         // Request permission on page load if not already granted
@@ -628,6 +628,7 @@
             
             let sent = 0;
             const total = count;
+            let orderNumber = 1000;
 
             const sendNext = async () => {
                 if (sent >= total) {
@@ -643,7 +644,8 @@
                 }
 
                 sent++;
-                await createCustomNotification(userName, itemCount, amount, storeName, enableVibration, enableSound, sent);
+                await createCustomNotification(userName, itemCount, amount, storeName, enableVibration, enableSound, orderNumber);
+                orderNumber++;
             };
 
             // Send first notification immediately
@@ -679,7 +681,7 @@
             }
         }
 
-        async function createCustomNotification(userName, itemCount, amount, storeName, enableVibration, enableSound, notificationNumber = 1) {
+        async function createCustomNotification(userName, itemCount, amount, storeName, enableVibration, enableSound, notificationNumber = 1000) {
             const body = `[${userName}] You have new order for ${itemCount} ${itemCount === 1 ? 'item' : 'items'} totaling ${amount.toFixed(2)}$ from ${storeName}.`;
             const title = `New order #${notificationNumber}`;
 
@@ -694,8 +696,8 @@
                     const registration = await navigator.serviceWorker.ready;
                     await registration.showNotification(title, {
                         body: body,
-                        icon: 'shopify.png',
-                        badge: 'shopify.png',
+                        icon: '/shopify.png',
+                        badge: '/shopify.png',
                         tag: `shopify-order-${notificationNumber}-${Date.now()}`,
                         requireInteraction: false,
                         vibrate: enableVibration ? [200, 100, 200] : undefined,
@@ -713,8 +715,8 @@
             // Fallback to standard Notification API
             const notification = new Notification(title, {
                 body: body,
-                icon: 'shopify.png',
-                badge: 'shopify.png',
+                icon: '/shopify.png',
+                badge: '/shopify.png',
                 tag: `shopify-order-${notificationNumber}-${Date.now()}`,
                 requireInteraction: false,
                 silent: !enableSound,
