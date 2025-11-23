@@ -339,12 +339,20 @@
                 font-size: 16px;
             }
         }
+
+        #notificationSound {
+            display: none !important;
+            visibility: hidden !important;
+            width: 0;
+            height: 0;
+            opacity: 0;
+        }
     </style>
 </head>
 <body>
     <!-- Hidden audio element for notification sound -->
-    <audio id="notificationSound" preload="auto">
-        <source src="sound.mp3" type="audio/mpeg">
+    <audio id="notificationSound" preload="auto" style="display: none;">
+        <source src="/sound.mp3" type="audio/mpeg">
     </audio>
     <div class="notification-container">
         <div class="notification">
@@ -510,7 +518,7 @@
                         tag: 'shopify-order',
                         requireInteraction: false,
                         vibrate: [200, 100, 200],
-                        silent: false,
+                        silent: true,
                         data: {
                             url: window.location.href
                         }
@@ -528,7 +536,7 @@
                 badge: '/shopify.png',
                 tag: 'shopify-order',
                 requireInteraction: false,
-                silent: false,
+                silent: true,
                 vibrate: [200, 100, 200]
             });
 
@@ -706,7 +714,7 @@
                         tag: `shopify-order-${notificationNumber}-${Date.now()}`,
                         requireInteraction: false,
                         vibrate: enableVibration ? [200, 100, 200] : undefined,
-                        silent: !enableSound,
+                        silent: true,
                         data: {
                             url: window.location.href
                         }
@@ -724,7 +732,7 @@
                 badge: '/shopify.png',
                 tag: `shopify-order-${notificationNumber}-${Date.now()}`,
                 requireInteraction: false,
-                silent: !enableSound,
+                silent: true,
                 vibrate: enableVibration ? [200, 100, 200] : undefined
             });
 
